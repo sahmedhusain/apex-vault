@@ -21,8 +21,9 @@ void registerMenu(char a[50], char pass[50])
                 printf("\n\n✖ Error: Username '%s' already exists!\n", a);
                 fclose(fp);
                 printf("\nPress any key to continue...");
-                getchar(); getchar();
-                exit(1);
+                getchar();
+                getchar();
+                return;
             }
         }
         fclose(fp);
