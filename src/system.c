@@ -366,16 +366,7 @@ void transferOwner(struct User u) {
         printf("\nEnter new User ID: ");
         scanf("%d", &newOwnerId);
 
-        // TODO: Verify new owner exists?
-        // For now, just assume yes as per instructions not explicitly requiring
-        // strict user check logic here. NOTE: We do NOT have the new owner's
-        // username here. records.txt requires a username field. If we update
-        // userId but not username, consistency is broken? `records.txt` format:
-        // id userId name ... The `name` field in records.txt seems to be the
-        // User's name. If I transfer ownership, I should update the name too.
-        // So I need to search users.txt for newOwnerId to get their name.
-
-        // Let's implement looking up new user name.
+        // Check if new owner exists
         FILE *uf = fopen("./data/users.txt", "r");
         struct User checker;
         int userFound = 0;
@@ -384,7 +375,7 @@ void transferOwner(struct User u) {
                         checker.password) != EOF) {
             if (checker.id == newOwnerId) {
               userFound = 1;
-              strcpy(userName, checker.name); // basic update
+              strcpy(userName, checker.name);
               r.userId = newOwnerId;
               printf("\n✔ Ownership transferred to %s (ID: %d)\n", checker.name,
                      newOwnerId);
