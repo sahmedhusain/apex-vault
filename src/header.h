@@ -36,6 +36,12 @@ const char *getPassword(struct User u);
 
 int getUserId(char name[50]);
 
+// Validated Input Functions
+int getValidatedInteger(const char *prompt);
+double getValidatedFloat(const char *prompt);
+int getDateInput(const char *prompt, char *buffer);
+int getAlphaInput(const char *prompt, char *buffer, int size);
+
 // system function
 void createNewAcc(struct User u);
 void mainMenu(struct User u);

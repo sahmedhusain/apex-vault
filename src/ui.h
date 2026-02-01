@@ -36,4 +36,7 @@ void getPasswordInput(const char *prompt, char *buffer, int size);
 // Pause execution and wait for user keypress
 void waitForKeyPress();
 
+// Validated Input Functions
+// Validated Input Functions - MOVED to header.h
+
 #endif

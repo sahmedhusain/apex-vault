@@ -7,7 +7,7 @@ void registerMenu(char a[50], char pass[50]) {
   showHeader("User Registration");
 
   while (1) {
-    getInput("Enter username:", a, 50);
+    getAlphaInput("Enter username:", a, 50);
 
     FILE *fp;
     struct User userChecker;

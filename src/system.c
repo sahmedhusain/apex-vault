@@ -1,5 +1,6 @@
 #include "header.h"
 #include "ui.h"
+#include <ctype.h>
 
 const char *RECORDS = "./data/records.txt";
 
@@ -21,17 +22,72 @@ void success(struct User u) {
   waitForKeyPress();
 }
 
-// Helpers for input parsing
-int getInt(const char *prompt) {
-  char buf[100];
-  getInput(prompt, buf, 100);
-  return atoi(buf);
+// Helpers for input validations
+int getValidatedInteger(const char *prompt) {
+  char buffer[50];
+  int value;
+  while (1) {
+    getInput(prompt, buffer, sizeof(buffer));
+    if (strlen(buffer) == 0)
+      return -1; // Cancelled
+    char *endptr;
+    value = strtol(buffer, &endptr, 10);
+    if (endptr != buffer && *endptr == '\0') {
+      return value;
+    }
+    showStatus("Invalid input! Please enter a valid number.", 1);
+  }
 }
 
-double getDouble(const char *prompt) {
-  char buf[100];
-  getInput(prompt, buf, 100);
-  return atof(buf);
+double getValidatedFloat(const char *prompt) {
+  char buffer[50];
+  double value;
+  while (1) {
+    getInput(prompt, buffer, sizeof(buffer));
+    if (strlen(buffer) == 0)
+      return -1.0; // Cancelled
+    char *endptr;
+    value = strtod(buffer, &endptr);
+    if (endptr != buffer && *endptr == '\0' && value >= 0) {
+      return value;
+    }
+    showStatus("Invalid input! Please enter a valid positive amount.", 1);
+  }
+}
+
+int getDateInput(const char *prompt, char *buffer) {
+  int m, d, y;
+  while (1) {
+    getInput(prompt, buffer, 20);
+    if (strlen(buffer) == 0)
+      return -1; // Cancelled
+    if (sscanf(buffer, "%d/%d/%d", &m, &d, &y) == 3) {
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+        return 0; // Success
+      }
+    }
+    showStatus("Invalid date! Format must be mm/dd/yyyy.", 1);
+  }
+}
+
+int getAlphaInput(const char *prompt, char *buffer, int size) {
+  while (1) {
+    getInput(prompt, buffer, size);
+    if (strlen(buffer) == 0)
+      return -1; // Cancelled
+    if (strlen(buffer) > 0) {
+      int valid = 1;
+      for (int i = 0; buffer[i] != '\0'; i++) {
+        if (!isalpha(buffer[i]) && buffer[i] != ' ') {
+          valid = 0;
+          break;
+        }
+      }
+      if (valid)
+        return 0;
+    }
+    showStatus("Invalid input! Use alphabets only.", 1);
+  }
 }
 
 void createNewAcc(struct User u) {
@@ -43,10 +99,12 @@ void createNewAcc(struct User u) {
 
   showHeader("New Record");
 
-  getInput("Enter today's date (mm/dd/yyyy):", buf, 100);
+  if (getDateInput("Enter today's date (mm/dd/yyyy):", buf) == -1)
+    return;
   sscanf(buf, "%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
 
-  r.accountNbr = getInt("Enter the account number:");
+  if ((r.accountNbr = getValidatedInteger("Enter the account number:")) == -1)
+    return;
 
   int maxId = -1;
   rewind(pf);
@@ -63,9 +121,12 @@ void createNewAcc(struct User u) {
   r.id = maxId + 1;
   r.userId = u.id;
 
-  getInput("Enter the country:", r.country, 100);
-  r.phone = getInt("Enter the phone number:");
-  r.amount = getDouble("Enter amount to deposit: $");
+  if (getAlphaInput("Enter the country:", r.country, 100) == -1)
+    return;
+  if ((r.phone = getValidatedInteger("Enter the phone number:")) == -1)
+    return;
+  if ((r.amount = getValidatedFloat("Enter amount to deposit (BHD):")) == -1.0)
+    return;
 
   const char *types[] = {"saving", "current", "fixed01", "fixed02", "fixed03"};
   int typeChoice = showMenu("Choose Account Type", types, 5);
@@ -101,7 +162,7 @@ void checkAllAccounts(struct User u) {
              r.deposit.year);
       printf("Country:        %s\n", r.country);
       printf("Phone number:   %d\n", r.phone);
-      printf("Amount:         $%.2f\n", r.amount);
+      printf("Amount:         BHD %.2f\n", r.amount);
       printf("Type:           %s\n", r.accountType);
     }
   }
@@ -121,7 +182,8 @@ void updateAccount(struct User u) {
   int found = 0;
 
   showHeader("Update Account");
-  accountId = getInt("Enter the account ID to update:");
+  if ((accountId = getValidatedInteger("Enter the account number:")) == -1)
+    return;
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
@@ -137,7 +199,7 @@ void updateAccount(struct User u) {
   }
 
   while (getAccountFromFile(pt, userName, &r)) {
-    if (r.id == accountId) {
+    if (r.accountNbr == accountId) {
       if (r.userId != u.id) {
         showStatus("Error: You do not own this account!", 1);
       } else {
@@ -152,7 +214,8 @@ void updateAccount(struct User u) {
         if (updChoice == 1) {
           getInput("Enter new country:", r.country, 100);
         } else if (updChoice == 2) {
-          r.phone = getInt("Enter new phone:");
+          if ((r.phone = getValidatedInteger("Enter new phone:")) == -1)
+            return;
         }
         showStatus("Record Updated!", 0);
       }
@@ -179,7 +242,8 @@ void checkAccountDetails(struct User u) {
   int found = 0;
 
   showHeader("Account Details");
-  accountId = getInt("Enter the account ID:");
+  if ((accountId = getValidatedInteger("Enter the account number:")) == -1)
+    return;
 
   FILE *pt = fopen(RECORDS, "r");
   if (pt == NULL) {
@@ -189,10 +253,10 @@ void checkAccountDetails(struct User u) {
   }
 
   while (getAccountFromFile(pt, userName, &r)) {
-    if (r.id == accountId && r.userId == u.id) {
+    if (r.accountNbr == accountId && r.userId == u.id) {
       found = 1;
       printf("\nAccount number: %d\nDeposit Date: %d/%d/%d\nCountry: %s\nPhone "
-             "number: %d\nAmount deposited: $%.2f\nType Of Account: %s\n",
+             "number: %d\nAmount deposited: BHD %.2f\nType Of Account: %s\n",
              r.accountNbr, r.deposit.day, r.deposit.month, r.deposit.year,
              r.country, r.phone, r.amount, r.accountType);
 
@@ -209,7 +273,7 @@ void checkAccountDetails(struct User u) {
         rate = 0.0;
 
       double interest = r.amount * rate / 12;
-      printf("\nInterest Rate: %.0f%% \nMonthly Interest Reward: $%.2f\n",
+      printf("\nInterest Rate: %.0f%% \nMonthly Interest Reward: BHD %.2f\n",
              rate * 100, interest);
     }
   }
@@ -229,7 +293,8 @@ void makeTransaction(struct User u) {
   int found = 0;
 
   showHeader("Make Transaction");
-  accountId = getInt("Enter the account ID:");
+  if ((accountId = getValidatedInteger("Enter the account number:")) == -1)
+    return;
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
@@ -245,22 +310,28 @@ void makeTransaction(struct User u) {
   }
 
   while (getAccountFromFile(pt, userName, &r)) {
-    if (r.id == accountId && r.userId == u.id) {
+    if (r.accountNbr == accountId && r.userId == u.id) {
       found = 1;
       if (strstr(r.accountType, "fixed") != NULL) {
         showStatus("Cannot perform transactions on fixed accounts!", 1);
       } else {
-        printf("\nAccount Found! Current Balance: $%.2f\n", r.amount);
+        printf("\nAccount Found! Current Balance: BHD %.2f\n", r.amount);
 
         const char *transOptions[] = {"Deposit", "Withdraw"};
         int transChoice = showMenu("Transaction Type", transOptions, 2);
 
         if (transChoice == 1) {
-          amount = getDouble("Enter amount to deposit:");
+          double val = getValidatedFloat("Enter amount to deposit:");
+          if (val == -1.0)
+            return;
+          amount = val;
           r.amount += amount;
           showStatus("Deposit successful!", 0);
         } else if (transChoice == 2) {
-          amount = getDouble("Enter amount to withdraw:");
+          double val = getValidatedFloat("Enter amount to withdraw:");
+          if (val == -1.0)
+            return;
+          amount = val;
           if (amount > r.amount) {
             showStatus("Insufficient balance!", 1);
           } else {
@@ -293,7 +364,9 @@ void removeAccount(struct User u) {
   int found = 0;
 
   showHeader("Remove Account");
-  accountId = getInt("Enter the account ID to remove:");
+  if ((accountId =
+           getValidatedInteger("Enter the account number to remove:")) == -1)
+    return;
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
@@ -309,10 +382,10 @@ void removeAccount(struct User u) {
   }
 
   while (getAccountFromFile(pt, userName, &r)) {
-    if (r.id == accountId) {
+    if (r.accountNbr == accountId) {
       if (r.userId == u.id) {
         found = 1;
-        printf("\nAccount ID %d removed.\n", accountId);
+        printf("\nAccount number %d removed.\n", accountId);
         continue; // Skip writing
       } else {
         showStatus("Access Denied! You do not own this account.", 1);
@@ -343,7 +416,9 @@ void transferOwner(struct User u) {
   int found = 0;
 
   showHeader("Transfer Ownership");
-  accountId = getInt("Enter the account ID to transfer:");
+  if ((accountId =
+           getValidatedInteger("Enter the account number to transfer:")) == -1)
+    return;
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
@@ -359,10 +434,11 @@ void transferOwner(struct User u) {
   }
 
   while (getAccountFromFile(pt, userName, &r)) {
-    if (r.id == accountId) {
+    if (r.accountNbr == accountId) {
       if (r.userId == u.id) {
         found = 1;
-        newOwnerId = getInt("Enter new User ID:");
+        if ((newOwnerId = getValidatedInteger("Enter new User ID:")) == -1)
+          return;
 
         // Check new owner
         FILE *uf = fopen("./data/users.txt", "r");

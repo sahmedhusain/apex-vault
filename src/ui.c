@@ -202,26 +202,33 @@ int showMenu(const char *title, const char *options[], int count) {
 
 void getInput(const char *prompt, char *buffer, int size) {
   printf(COLOR_BOLD);
-  printPadding(strlen(prompt) + 1); // +1 to account for cursor space approx
+  printPadding(strlen(prompt) + 1);
   printf("%s " COLOR_RESET, prompt);
+  printf("\033[?25h"); // Show cursor
 
-  // Show cursor for input
-  printf("\033[?25h");
+  int pos = 0;
+  buffer[0] = '\0'; // Initialize empty
 
-  // Ensure we are in canonical mode for input (fgets)
-  struct termios t;
-  tcgetattr(STDIN_FILENO, &t);
-  t.c_lflag |= (ECHO | ICANON);
-  tcsetattr(STDIN_FILENO, TCSANOW, &t);
-
-  if (fgets(buffer, size, stdin) != NULL) {
-    size_t len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n') {
-      buffer[len - 1] = '\0';
+  while (1) {
+    int ch = getch();
+    if (ch == '\n' || ch == '\r') {
+      buffer[pos] = '\0';
+      break;
+    } else if (ch == 27) { 
+      buffer[0] = '\0';
+      break;
+    } else if (ch == KEY_BACKSPACE || ch == 127 || ch == 8) {
+      if (pos > 0) {
+        pos--;
+        printf("\b \b");
+      }
+    } else if (pos < size - 1 && isprint(ch)) {
+      buffer[pos++] = ch;
+      putchar(ch);
     }
   }
 
-  // Hide cursor again
+  printf("\n");
   printf("\033[?25l");
 }
 
@@ -249,7 +256,7 @@ void getPasswordInput(const char *prompt, char *buffer, int size) {
   }
 
   printf("\n");
-  printf("\033[?25l"); // Hide cursor
+  printf("\033[?25l");
 }
 
 void waitForKeyPress() {
