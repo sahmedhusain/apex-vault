@@ -20,6 +20,7 @@
 #define KEY_UP 65
 #define KEY_DOWN 66
 #define KEY_ENTER 10
+#define KEY_BACKSPACE 127
 
 static struct termios orig_termios;
 static int ui_initialized = 0;
@@ -44,14 +45,6 @@ void initUI() {
 
   atexit(resetTerminal);
 
-  struct termios raw = orig_termios;
-  // Disable canonical mode and echo for menu navigation
-  // We will enable them temporarily for string input
-  // raw.c_lflag &= ~(ECHO | ICANON);
-
-  // For now, we only disable canonical mode when reading characters directly
-  // But for the global init, we might want to just ensure we can restore state.
-
   ui_initialized = 1;
 
   // Hide cursor initially
@@ -63,45 +56,55 @@ void closeUI() { resetTerminal(); }
 
 void clearScreen() { printf("\033[H\033[J"); }
 
-void printCentered(const char *text) {
-  // Assuming 80 column width for simplicity, or 80 is standard TUI width
+// Helper to print padding for centering
+void printPadding(int len) {
   int width = 80;
-  int len = strlen(text);
   int padding = (width - len) / 2;
   if (padding < 0)
     padding = 0;
-
   for (int i = 0; i < padding; i++)
     putchar(' ');
+}
+
+void printCentered(const char *text) {
+  printPadding(strlen(text));
   printf("%s\n", text);
 }
 
 void showHeader(const char *title) {
   clearScreen();
   printf(COLOR_CYAN);
-  printCentered(
-      "================================================================");
-  char buf[100];
-  snprintf(buf, sizeof(buf), "ATM MANAGEMENT SYSTEM");
-  printCentered(buf);
-  printCentered(
-      "================================================================");
+  // Manual text centering (8 spaces padding) because strlen() counts bytes, not
+  // columns, breaking dynamic centering for UTF-8 box chars
+  printf("        "
+         "╔══════════════════════════════════════════════════════════════╗\n"
+         "        ║                    ATM MANAGEMENT SYSTEM                   "
+         "  ║\n"
+         "        "
+         "╚══════════════════════════════════════════════════════════════╝\n");
   printf(COLOR_RESET);
   printf("\n");
 
   if (title) {
     printf(COLOR_BOLD COLOR_YELLOW);
-    printCentered(title);
+    char buf[100];
+    snprintf(buf, sizeof(buf), "=== %s ===", title);
+    printCentered(buf);
     printf(COLOR_RESET);
     printf("\n");
   }
 }
 
 void showStatus(const char *message, int isError) {
+  // Rough estimate of displayed length (message length + [ERROR] space)
+  int len = strlen(message) + 10;
+
   if (isError) {
-    printf(COLOR_RED "\n[ERROR] %s" COLOR_RESET "\n", message);
+    printPadding(len);
+    printf(COLOR_RED "[ERROR] %s" COLOR_RESET "\n", message);
   } else {
-    printf(COLOR_GREEN "\n[SUCCESS] %s" COLOR_RESET "\n", message);
+    printPadding(len);
+    printf(COLOR_GREEN "[SUCCESS] %s" COLOR_RESET "\n", message);
   }
 }
 
@@ -127,15 +130,53 @@ int showMenu(const char *title, const char *options[], int count) {
 
     printf("\n");
     for (int i = 0; i < count; i++) {
+      // Construct the display label
+      char label[100];
       if (i == selected) {
-        printf(COLOR_BOLD COLOR_WHITE BG_BLUE "  > %-40s  " COLOR_RESET "\n",
-               options[i]);
+        snprintf(label, sizeof(label), "> %s <", options[i]);
       } else {
-        printf("    %-40s    \n", options[i]);
+        strcpy(label, options[i]);
       }
+
+      int menuWidth = 40; // Fixed width for menu bars
+      int len = strlen(label);
+      int padL = (menuWidth - len) / 2;
+      int padR = menuWidth - len - padL;
+      if (padL < 0) {
+        padL = 0;
+        padR = 0;
+      }
+
+      // Calculate screen centering for the 40-char block
+      int screenPad = (80 - menuWidth) / 2;
+      if (screenPad < 0)
+        screenPad = 0;
+
+      // Print screen left padding (uncolored)
+      for (int k = 0; k < screenPad; k++)
+        putchar(' ');
+
+      // Start coloring
+      if (i == selected)
+        printf(COLOR_BOLD COLOR_WHITE BG_BLUE);
+
+      // Print block left padding
+      for (int k = 0; k < padL; k++)
+        putchar(' ');
+
+      // Print label
+      printf("%s", label);
+
+      // Print block right padding
+      for (int k = 0; k < padR; k++)
+        putchar(' ');
+
+      // Reset color and newline
+      printf(COLOR_RESET "\n");
     }
-    printf("\n" COLOR_CYAN
-           "Use UP/DOWN arrows to navigate, ENTER to select." COLOR_RESET "\n");
+    printf("\n" COLOR_CYAN);
+    printCentered("Use UP/DOWN arrows to navigate, ENTER to select.");
+    printf(COLOR_RESET "\n");
 
     ch = getch();
 
@@ -154,14 +195,15 @@ int showMenu(const char *title, const char *options[], int count) {
         break;
       }
     } else if (ch == '\n' || ch == '\r') {
-      return selected + 1; // Return 1-based index to match existing logic logic
-                           // usually (case 1, case 2)
+      return selected + 1;
     }
   }
 }
 
 void getInput(const char *prompt, char *buffer, int size) {
-  printf(COLOR_BOLD "\n%s " COLOR_RESET, prompt);
+  printf(COLOR_BOLD);
+  printPadding(strlen(prompt) + 1); // +1 to account for cursor space approx
+  printf("%s " COLOR_RESET, prompt);
 
   // Show cursor for input
   printf("\033[?25h");
@@ -184,31 +226,35 @@ void getInput(const char *prompt, char *buffer, int size) {
 }
 
 void getPasswordInput(const char *prompt, char *buffer, int size) {
-  printf(COLOR_BOLD "\n%s " COLOR_RESET, prompt);
+  printf(COLOR_BOLD);
+  printPadding(strlen(prompt) + 1);
+  printf("%s " COLOR_RESET, prompt);
   printf("\033[?25h"); // Show cursor
 
-  struct termios t;
-  tcgetattr(STDIN_FILENO, &t);
-  t.c_lflag &= ~ECHO;  // Turn off echo
-  t.c_lflag |= ICANON; // Ensure line buffering is on for enter key
-  tcsetattr(STDIN_FILENO, TCSANOW, &t);
-
-  if (fgets(buffer, size, stdin) != NULL) {
-    size_t len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n') {
-      buffer[len - 1] = '\0';
+  int pos = 0;
+  while (1) {
+    int ch = getch();
+    if (ch == '\n' || ch == '\r') {
+      buffer[pos] = '\0';
+      break;
+    } else if (ch == KEY_BACKSPACE || ch == 127 || ch == 8) {
+      if (pos > 0) {
+        pos--;
+        printf("\b \b");
+      }
+    } else if (pos < size - 1 && isprint(ch)) {
+      buffer[pos++] = ch;
+      printf("*");
     }
   }
 
-  // Restore echo
-  t.c_lflag |= ECHO;
-  tcsetattr(STDIN_FILENO, TCSANOW, &t);
-
-  printf("\n");        // Move to next line since echo was off
+  printf("\n");
   printf("\033[?25l"); // Hide cursor
 }
 
 void waitForKeyPress() {
-  printf(COLOR_CYAN "\nPress any key to continue..." COLOR_RESET);
+  printf(COLOR_CYAN);
+  printCentered("Press any key to continue...");
+  printf(COLOR_RESET);
   getch();
 }
