@@ -1,182 +1,118 @@
 # ATM Management System 🏦
 
-[![Go](https://img.shields.io/badge/Go-1.20+-00ADD8?style=flat&logo=go)](https://golang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![C](https://img.shields.io/badge/Language-C-blue.svg)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
----
-
-<p align="center">
-  🧩 <strong>Tetris Optimizer</strong><br/>
-  <em>Optimal tetromino arrangement powered by Go</em>
-</p>
-
-<p align="center">
-  Backtracking algorithm • File parsing • Smallest square optimization
-</p>
-
----
-
-<p align="center">
-  <strong>Arrange tetrominoes into the smallest possible square.</strong><br/>
-  <em>Smart. Optimized. Efficient.</em>
-</p>
-
-<!-- 🔗 Quick Navigation -->
-<p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-logic--flow">Logic & Flow</a> •
-  <a href="#-technologies-used">Tech Stack</a> •
-  <a href="#-getting-started">Getting Started</a> •
-  <a href="#-how-to-use">Usage</a>
-</p>
-
----
-
-## Overview
-
-**Tetris Optimizer** is a command-line program written in **Go** that reads tetromino pieces from a text file and arranges them into the smallest possible square using a backtracking algorithm.
-
-Designed as an algorithmic optimization project, Tetris Optimizer demonstrates core concepts such as file parsing, shape rotation, recursive backtracking, and spatial optimization.
+A robust, terminal-based **ATM Management System** built in C. It features a modern, centered **Text User Interface (TUI)** with keyboard navigation, secure authentication, and comprehensive account management capabilities.
 
 ---
 
 ## ✨ Features
 
-Tetris Optimizer includes the following core features:
+- **Modern TUI Experience** 🖥️
+  - **Centered Layout**: All menus, prompts, and status messages are perfectly centered.
+  - **Keyboard Navigation**: Use **UP/DOWN** arrows to navigate menus and **ENTER** to select.
+  - **Responsive Input**: Supports **ESC** to cancel any operation instantly.
+  - **Boxed Interface**: aesthetically pleasing double-line borders.
 
-- **File Parsing** 📄  
-  Reads and validates tetromino pieces from text files. It checks for correct format, 4-line blocks, and valid character usage.
+- **Secure Authentication** �
+  - **Login System**: Secure access with password masking (`*`).
+  - **Registration**: New users can securely sign up.
+  - **Data Persistence**: All user and account data is saved to local files (`users.txt`, `records.txt`).
 
-- **Shape Validation** ✅  
-  Ensures all pieces are valid tetrominoes:
-  - Exactly 4 blocks (`#`).
-  - All blocks are connected (validated via DFS/BFS).
-  - Proper 4x4 grid spacing.
+- **Account Operations** �
+  - **Create Account**: Open new accounts (Savings, Fixed, Current).
+  - **Update Account**: Modify phone numbers or country details.
+  - **Check Accounts**: View all owned accounts in a list.
+  - **Account Details**: Lookup specific account details by **Account Number**.
+  - **Remove Account**: Delete closed accounts.
+  - **Transfer Ownership**: Transfer accounts to other users securely.
 
-- **Rotation Logic** 🔄  
-  Automatically generates all unique rotations of each piece to maximize fitting potential. It handles symmetry detection to avoid redundant checks.
-
-- **Backtracking Algorithm** 🎯  
-  Intelligently places pieces using recursive backtracking. If a piece doesn't fit, it backtracks to the previous piece and tries a new position or rotation.
-
-- **Size Optimization** 📐  
-  Finds the **smallest possible square** that fits all pieces. It starts from the theoretical minimum size (`ceil(sqrt(n*4))`) and expands incrementally until a solution is found.
-
-- **Error Handling** ⚠️  
-  Prints "ERROR" for invalid input files or malformed tetrominoes, ensuring robust execution.
-
----
-
-## 🧠 Logic & Flow
-
-The application follows a structured pipeline from parsing to solving. Below are visual representations of the system's logic.
-
-### 1. High-Level Execution Flow
-
-This flowchart illustrates the lifecycle of the program from command-line argument to final output.
-
-```mermaid
-graph TD
-    A([Start]) --> B{Check Args}
-    B -- Invalid --> C[Print Usage Error] --> Z([End])
-    B -- Valid --> D[Parse File]
-
-    D --> E{Valid Format?}
-    E -- No --> F[Print "ERROR"] --> Z
-    E -- Yes --> G[Generate Rotations for All Pieces]
-
-    G --> H[Calculate Min Board Size]
-    H --> I[Attempt to Solve (Backtracking)]
-
-    I --> J{Solution Found?}
-    J -- Yes --> K[Print Board] --> Z
-    J -- No --> L[Increase Board Size] --> I
-```
-
-### 2. Backtracking Algorithm (The Core)
-
-The core logical engine uses recursive backtracking to fit pieces. This state diagram shows how the solver decides where to place pieces.
-
-```mermaid
-stateDiagram-v2
-    [*] --> SelectPiece
-
-    state "Recursion Loop" as Loop {
-        SelectPiece --> TryPosition
-        TryPosition --> CheckFit: Can Place?
-
-        CheckFit --> PlacePiece: Yes
-        PlacePiece --> NextPiece: Recurse (Next ID)
-
-        CheckFit --> TryNextRotation: No
-        TryNextRotation --> TryPosition: Has Rotations
-        TryNextRotation --> Backtrack: No Rotations Left
-
-        NextPiece --> Solved: All Placed
-        NextPiece --> Backtrack: Failed Deep
-
-        Backtrack --> RemovePiece: Undo Move
-        RemovePiece --> TryPosition: Try Next Pos
-    }
-
-    Solved --> [*]: Return Board
-```
-
-### 3. Application Structure
-
-The code is organized into modular packages to separate concerns.
-
-```mermaid
-classDiagram
-    direction TB
-    class Main {
-        +main()
-        +Orchestrate Flow
-    }
-
-    class Parser {
-        +ParseFile(path)
-        +ValidateShape()
-        +Normalize()
-        +CheckConnectivity()
-    }
-
-    class Solver {
-        +Solve(pieces)
-        +solveRecursive(board, index)
-    }
-
-    class Board {
-        +Size
-        +Grid
-        +NewBoard(size)
-        +Place(piece)
-        +Remove(piece)
-        +String()
-    }
-
-    class Tetromino {
-        +ID
-        +Letter
-        +Blocks []Point
-        +Rotations
-    }
-
-    Main --> Parser : Reads Input
-    Main --> Solver : Requests Solution
-    Solver --> Board : Manipulates
-    Solver --> Tetromino : Arranges
-    Parser --> Tetromino : Creates
-```
+- **Transactions** �
+  - **Deposit**: Add funds to your account (Currency: **BHD**).
+  - **Withdraw**: Withdraw funds with balance validation.
+  - **Validation**: Strict input checks for amounts, dates, and IDs.
 
 ---
 
-## 🛠️ Technologies Used
+## 📸 Terminal Examples
 
-- **Go 1.20+** 🐹 – Core language and standard libraries
-- **File I/O** 📁 – Reading and parsing tetromino files
-- **Algorithms** 🧮 – Backtracking and recursive optimization
-- **Data Structures** 📊 – 2D grids and coordinate systems
+The system features a polished, centered interface. Here is exactly what it looks like in your terminal:
+
+### 1. Main Menu
+
+The heart of the navigation. options are highlighted when selected.
+
+```text
+        ╔══════════════════════════════════════════════════════════════╗
+        ║                    ATM MANAGEMENT SYSTEM                     ║
+        ╚══════════════════════════════════════════════════════════════╝
+
+                               === Main Menu ===
+
+                              Create a new account
+                           Update account information
+                                 Check accounts
+                        > Check list of owned account <
+                                Make Transaction
+                            Remove existing account
+                               Transfer ownership
+                                      Exit
+
+                Use UP/DOWN arrows to navigate, ENTER to select.
+```
+
+### 2. Login Screen
+
+Secure entry point.
+
+```text
+        ╔══════════════════════════════════════════════════════════════╗
+        ║                    ATM MANAGEMENT SYSTEM                     ║
+        ╚══════════════════════════════════════════════════════════════╝
+
+                           === Welcome to ATM System ===
+
+                                    > Login <
+                                     Register
+                                       Exit
+
+                Use UP/DOWN arrows to navigate, ENTER to select.
+```
+
+### 3. Account Details
+
+Clear presentation of account information.
+
+```text
+                               === Account Details ===
+
+        Account number: 101
+        Deposit Date:   1/15/2024
+        Country:        Bahrain
+        Phone number:   33001122
+        Amount:         BHD 1500.50
+        Type:           saving
+
+        Interest Rate: 7%
+        Monthly Interest Reward: BHD 8.75
+
+        Press any key to continue...
+```
+
+### 4. Input Validation
+
+Robust handling of user input with error messages.
+
+```text
+                               === Make Transaction ===
+
+                       Enter the account number: 999
+
+                       [!] Account not found or access denied.
+
+        Press any key to continue...
+```
 
 ---
 
@@ -184,127 +120,55 @@ classDiagram
 
 ### Prerequisites
 
-- Go version **1.20 or newer**
-- A terminal to run the program
+- GCC Compiler (or any standard C compiler)
+- Make (optional, for easy building)
 
-### Installation & Setup
+### Installation
 
-1. **Clone the repository:**
+1.  **Clone the repository**:
 
-   ```bash
-   git clone https://learn.reboot01.com/git/sayehusain/tetris-optimizer
-   ```
+    ```bash
+    git clone https://github.com/yourusername/atm-management-system.git
+    cd atm-management-system
+    ```
 
-2. **Navigate to the project directory:**
+2.  **Compile the project**:
 
-   ```bash
-   cd tetris-optimizer
-   ```
+    ```bash
+    make
+    ```
 
-3. **Install dependencies (if any):**
+    _Or manually:_ `gcc -o atm src/main.c src/system.c src/auth.c src/ui.c`
 
-   ```bash
-   go mod tidy
-   ```
-
-   _(Note: This project strictly uses the standard library, so no external modules are fetched)_
-
-4. **Build the program:**
-   ```bash
-   go build -o tetris-optimizer
-   ```
+3.  **Run the application**:
+    ```bash
+    ./atm
+    ```
 
 ---
 
-## 📖 How to Use
-
-Run the program by passing a text file containing tetromino definitions as an argument.
-
-### Basic Usage
-
-```bash
-go run . testdata/sample.txt
-```
-
-Or using the compiled binary:
-
-```bash
-./tetris-optimizer testdata/sample.txt
-```
-
-### Input File Format
-
-Each tetromino must be represented as a **4x4 grid** using `#` for blocks and `.` for empty spaces. Consecutive pieces must be separated by **one empty line**.
-
-**Example Input (`sample.txt`):**
-
-```text
-...#
-...#
-...#
-...#
-
-....
-....
-....
-####
-
-.###
-...#
-....
-....
-```
-
-### Output Example
-
-The program prints the smallest square board with pieces identified by letters (A, B, C...) corresponding to their order in the input file.
-
-```bash
-$ ./tetris-optimizer testdata/sample.txt
-ABBBB.
-ACCCEE
-AFFCEE
-A.FFGG
-HHHDDG
-.HDD.G
-```
-
----
-
-## 🏗️ Project Structure
+## �️ Project Structure
 
 ```
-tetris-optimizer/
-├── main.go              # Entry point: handles CLI args & orchestration
-├── packages/            # Modular logic packages
-│   ├── parser.go        # Reads file, validates shapes, creates structs
-│   ├── tetromino.go     # Tetromino definitions & rotation utilities
-│   ├── board.go         # 2D Grid implementation & print methods
-│   └── solver.go        # Recursive backtracking algorithm
-├── tests/               # Unit tests
-└── testdata/            # Sample input files for testing
+atm-management-system/
+├── src/
+│   ├── main.c       # Entry point & menu logic
+│   ├── system.c     # Account operations & transaction logic
+│   ├── auth.c       # Authentication (Login/Register)
+│   ├── ui.c         # TUI handling, Input Validation details
+│   ├── header.h     # Data structures & Global declarations
+│   └── ui.h         # UI function declarations
+├── data/
+│   ├── users.txt    # User credentials database
+│   └── records.txt  # Account records database
+├── Makefile         # Build configuration
+└── README.md        # Documentation
 ```
-
----
 
 ## 🤝 Contributing
 
-Contributions are welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes.
 
 ---
 
-## 📄 License
-
-This project is licensed under the **MIT License**. See [LICENSE.md](LICENSE.md) for details.
-
----
-
-## 👥 Authors
-
-- **Sayed Ahmed Husain** – [sayedahmed97.sad@gmail.com](mailto:sayedahmed97.sad@gmail.com)
+**Developed with ❤️ by Sayed Ahmed**
