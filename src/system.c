@@ -1,4 +1,5 @@
 #include "header.h"
+#include "ui.h"
 
 const char *RECORDS = "./data/records.txt";
 
@@ -15,68 +16,37 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r) {
           r.country, r.phone, r.amount, r.accountType);
 }
 
-void stayOrReturn(int notGood, void f(struct User u), struct User u) {
-  int option;
-  if (notGood == 0) {
-    system("clear");
-    printf("\n✖ Record not found!!\n");
-  invalid:
-    printf("\nEnter 0 to try again, 1 to return to main menu and 2 to exit:");
-    scanf("%d", &option);
-    if (option == 0)
-      f(u);
-    else if (option == 1)
-      mainMenu(u);
-    else if (option == 2)
-      exit(0);
-    else {
-      printf("Insert a valid operation!\n");
-      goto invalid;
-    }
-  } else {
-    printf("\nEnter 1 to go to the main menu and 0 to exit:");
-    scanf("%d", &option);
-  }
-  if (option == 1) {
-    system("clear");
-    mainMenu(u);
-  } else {
-    system("clear");
-    exit(1);
-  }
+void success(struct User u) {
+  showStatus("Operation Completed!", 0);
+  waitForKeyPress();
 }
 
-void success(struct User u) {
-  int option;
-  printf("\n✔ Success!\n\n");
-invalid:
-  printf("Enter 1 to go to the main menu and 0 to exit!\n");
-  scanf("%d", &option);
-  system("clear");
-  if (option == 1) {
-    mainMenu(u);
-  } else if (option == 0) {
-    exit(1);
-  } else {
-    printf("Insert a valid operation!\n");
-    goto invalid;
-  }
+// Helpers for input parsing
+int getInt(const char *prompt) {
+  char buf[100];
+  getInput(prompt, buf, 100);
+  return atoi(buf);
+}
+
+double getDouble(const char *prompt) {
+  char buf[100];
+  getInput(prompt, buf, 100);
+  return atof(buf);
 }
 
 void createNewAcc(struct User u) {
   struct Record r;
   struct Record cr;
   char userName[50];
+  char buf[100];
   FILE *pf = fopen(RECORDS, "a+");
 
-noAccount:
-  system("clear");
-  printf("\t\t\t===== New record =====\n");
+  showHeader("New Record");
 
-  printf("\nEnter today's date(mm/dd/yyyy):");
-  scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
-  printf("\nEnter the account number:");
-  scanf("%d", &r.accountNbr);
+  getInput("Enter today's date (mm/dd/yyyy):", buf, 100);
+  sscanf(buf, "%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
+
+  r.accountNbr = getInt("Enter the account number:");
 
   int maxId = -1;
   rewind(pf);
@@ -84,49 +54,64 @@ noAccount:
     if (cr.id > maxId)
       maxId = cr.id;
     if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr) {
-      printf("✖ This Account already exists for this user\n\n");
-      goto noAccount;
+      showStatus("This Account already exists for this user", 1);
+      fclose(pf);
+      waitForKeyPress();
+      return;
     }
   }
   r.id = maxId + 1;
   r.userId = u.id;
 
-  printf("\nEnter the country:");
-  scanf("%s", r.country);
-  printf("\nEnter the phone number:");
-  scanf("%d", &r.phone);
-  printf("\nEnter amount to deposit: $");
-  scanf("%lf", &r.amount);
-  printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> "
-         "fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 "
-         "years)\n\n\tEnter your choice:");
-  scanf("%s", r.accountType);
+  getInput("Enter the country:", r.country, 100);
+  r.phone = getInt("Enter the phone number:");
+  r.amount = getDouble("Enter amount to deposit: $");
+
+  const char *types[] = {"saving", "current", "fixed01", "fixed02", "fixed03"};
+  int typeChoice = showMenu("Choose Account Type", types, 5);
+  strcpy(r.accountType, types[typeChoice - 1]);
 
   saveAccountToFile(pf, u, r);
-
   fclose(pf);
-  success(u);
+  showStatus("Account Created Successfully!", 0);
+  waitForKeyPress();
 }
 
 void checkAllAccounts(struct User u) {
   char userName[100];
   struct Record r;
-
   FILE *pf = fopen(RECORDS, "r");
 
-  system("clear");
-  printf("\t\t====== All accounts from user, %s =====\n\n", u.name);
+  showHeader("All Accounts");
+  printf("\t\tUser: %s\n\n", u.name);
+
+  if (pf == NULL) {
+    showStatus("No records found.", 1);
+    waitForKeyPress();
+    return;
+  }
+
+  int found = 0;
   while (getAccountFromFile(pf, userName, &r)) {
     if (strcmp(userName, u.name) == 0) {
+      found = 1;
       printf("_____________________\n");
-      printf("\nAccount number:%d\nDeposit Date:%d/%d/%d \ncountry:%s \nPhone "
-             "number:%d \nAmount deposited: $%.2f \nType Of Account:%s\n",
-             r.accountNbr, r.deposit.day, r.deposit.month, r.deposit.year,
-             r.country, r.phone, r.amount, r.accountType);
+      printf("Account number: %d\n", r.accountNbr);
+      printf("Deposit Date:   %d/%d/%d\n", r.deposit.day, r.deposit.month,
+             r.deposit.year);
+      printf("Country:        %s\n", r.country);
+      printf("Phone number:   %d\n", r.phone);
+      printf("Amount:         $%.2f\n", r.amount);
+      printf("Type:           %s\n", r.accountType);
     }
   }
   fclose(pf);
-  success(u);
+
+  if (!found) {
+    printf("\nNo accounts found.\n");
+  }
+
+  waitForKeyPress();
 }
 
 void updateAccount(struct User u) {
@@ -135,39 +120,41 @@ void updateAccount(struct User u) {
   char userName[50];
   int found = 0;
 
-  system("clear");
-  printf("\t\t\t===== Update Account =====\n");
-  printf("Enter the account ID to update: ");
-  scanf("%d", &accountId);
+  showHeader("Update Account");
+  accountId = getInt("Enter the account ID to update:");
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
 
   if (pt == NULL || tmp == NULL) {
-    printf("Error opening files.\n");
+    showStatus("Error opening files.", 1);
+    if (pt)
+      fclose(pt);
+    if (tmp)
+      fclose(tmp);
+    waitForKeyPress();
     return;
   }
 
   while (getAccountFromFile(pt, userName, &r)) {
     if (r.id == accountId) {
       if (r.userId != u.id) {
-        printf("\n✖ Error: You do not own this account (ID: %d)!\n", accountId);
+        showStatus("Error: You do not own this account!", 1);
       } else {
         found = 1;
         printf("\nAccount Found!\n");
         printf("Current Country: %s\n", r.country);
         printf("Current Phone: %d\n", r.phone);
 
-        printf("\nWhich field to update?\n1. Country\n2. Phone\nChoice: ");
-        scanf("%d", &choice);
-        if (choice == 1) {
-          printf("Enter new country: ");
-          scanf("%s", r.country);
-        } else if (choice == 2) {
-          printf("Enter new phone: ");
-          scanf("%d", &r.phone);
+        const char *updOptions[] = {"Update Country", "Update Phone"};
+        int updChoice = showMenu("Which field to update?", updOptions, 2);
+
+        if (updChoice == 1) {
+          getInput("Enter new country:", r.country, 100);
+        } else if (updChoice == 2) {
+          r.phone = getInt("Enter new phone:");
         }
-        printf("\n✔ Record Updated successfully provided.\n");
+        showStatus("Record Updated!", 0);
       }
     }
     fprintf(tmp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n", r.id, r.userId,
@@ -180,9 +167,9 @@ void updateAccount(struct User u) {
   rename("./data/temp.txt", RECORDS);
 
   if (!found) {
-    printf("\n✖ Account not found or already up to date.\n");
+    showStatus("Account not found or access denied.", 1);
   }
-  success(u);
+  waitForKeyPress();
 }
 
 void checkAccountDetails(struct User u) {
@@ -191,14 +178,13 @@ void checkAccountDetails(struct User u) {
   char userName[50];
   int found = 0;
 
-  system("clear");
-  printf("\t\t\t===== Account Details =====\n");
-  printf("Enter the account ID: ");
-  scanf("%d", &accountId);
+  showHeader("Account Details");
+  accountId = getInt("Enter the account ID:");
 
   FILE *pt = fopen(RECORDS, "r");
   if (pt == NULL) {
-    printf("Error opening file.\n");
+    showStatus("Error opening records.", 1);
+    waitForKeyPress();
     return;
   }
 
@@ -222,7 +208,7 @@ void checkAccountDetails(struct User u) {
       else if (strcmp(r.accountType, "current") == 0)
         rate = 0.0;
 
-      double interest = r.amount * rate / 12; // Monthly interest
+      double interest = r.amount * rate / 12;
       printf("\nInterest Rate: %.0f%% \nMonthly Interest Reward: $%.2f\n",
              rate * 100, interest);
     }
@@ -230,8 +216,9 @@ void checkAccountDetails(struct User u) {
   fclose(pt);
 
   if (!found)
-    printf("\n✖ Account not found or access denied.\n");
-  success(u);
+    showStatus("Account not found or access denied.", 1);
+
+  waitForKeyPress();
 }
 
 void makeTransaction(struct User u) {
@@ -241,16 +228,19 @@ void makeTransaction(struct User u) {
   double amount;
   int found = 0;
 
-  system("clear");
-  printf("\t\t\t===== Make Transaction =====\n");
-  printf("Enter the account ID: ");
-  scanf("%d", &accountId);
+  showHeader("Make Transaction");
+  accountId = getInt("Enter the account ID:");
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
 
   if (pt == NULL || tmp == NULL) {
-    printf("Error opening files.\n");
+    showStatus("Error opening files.", 1);
+    if (pt)
+      fclose(pt);
+    if (tmp)
+      fclose(tmp);
+    waitForKeyPress();
     return;
   }
 
@@ -258,25 +248,24 @@ void makeTransaction(struct User u) {
     if (r.id == accountId && r.userId == u.id) {
       found = 1;
       if (strstr(r.accountType, "fixed") != NULL) {
-        printf("\n✖ Cannot perform transactions on fixed accounts!\n");
+        showStatus("Cannot perform transactions on fixed accounts!", 1);
       } else {
         printf("\nAccount Found! Current Balance: $%.2f\n", r.amount);
-        printf("1. Deposit\n2. Withdraw\nChoice: ");
-        scanf("%d", &choice);
 
-        if (choice == 1) {
-          printf("Enter amount to deposit: ");
-          scanf("%lf", &amount);
+        const char *transOptions[] = {"Deposit", "Withdraw"};
+        int transChoice = showMenu("Transaction Type", transOptions, 2);
+
+        if (transChoice == 1) {
+          amount = getDouble("Enter amount to deposit:");
           r.amount += amount;
-          printf("\n✔ Deposit successful!\n");
-        } else if (choice == 2) {
-          printf("Enter amount to withdraw: ");
-          scanf("%lf", &amount);
+          showStatus("Deposit successful!", 0);
+        } else if (transChoice == 2) {
+          amount = getDouble("Enter amount to withdraw:");
           if (amount > r.amount) {
-            printf("\n✖ Insufficient balance!\n");
+            showStatus("Insufficient balance!", 1);
           } else {
             r.amount -= amount;
-            printf("\n✔ Withdrawal successful!\n");
+            showStatus("Withdrawal successful!", 0);
           }
         }
       }
@@ -292,8 +281,9 @@ void makeTransaction(struct User u) {
   rename("./data/temp.txt", RECORDS);
 
   if (!found)
-    printf("\n✖ Account not found or access denied.\n");
-  success(u);
+    showStatus("Account not found or access denied.", 1);
+
+  waitForKeyPress();
 }
 
 void removeAccount(struct User u) {
@@ -302,16 +292,19 @@ void removeAccount(struct User u) {
   char userName[50];
   int found = 0;
 
-  system("clear");
-  printf("\t\t\t===== Remove Account =====\n");
-  printf("Enter the account ID to remove: ");
-  scanf("%d", &accountId);
+  showHeader("Remove Account");
+  accountId = getInt("Enter the account ID to remove:");
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
 
   if (pt == NULL || tmp == NULL) {
-    printf("Error opening files.\n");
+    showStatus("Error opening files.", 1);
+    if (pt)
+      fclose(pt);
+    if (tmp)
+      fclose(tmp);
+    waitForKeyPress();
     return;
   }
 
@@ -319,10 +312,10 @@ void removeAccount(struct User u) {
     if (r.id == accountId) {
       if (r.userId == u.id) {
         found = 1;
-        printf("\n✔ Account %d removed successfully.\n", accountId);
-        continue; // Skip writing this record to temp file
+        printf("\nAccount ID %d removed.\n", accountId);
+        continue; // Skip writing
       } else {
-        printf("\n✖ Access Denied! You do not own this account.\n");
+        showStatus("Access Denied! You do not own this account.", 1);
       }
     }
     fprintf(tmp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n", r.id, r.userId,
@@ -335,9 +328,12 @@ void removeAccount(struct User u) {
   remove(RECORDS);
   rename("./data/temp.txt", RECORDS);
 
-  if (!found)
-    printf("\n✖ Account not found or not owned by you.\n");
-  success(u);
+  if (found) {
+    showStatus("Account removed successfully", 0);
+  } else {
+    showStatus("Account not found or not owned by you.", 1);
+  }
+  waitForKeyPress();
 }
 
 void transferOwner(struct User u) {
@@ -346,16 +342,19 @@ void transferOwner(struct User u) {
   char userName[50];
   int found = 0;
 
-  system("clear");
-  printf("\t\t\t===== Transfer Ownership =====\n");
-  printf("Enter the account ID to transfer: ");
-  scanf("%d", &accountId);
+  showHeader("Transfer Ownership");
+  accountId = getInt("Enter the account ID to transfer:");
 
   FILE *pt = fopen(RECORDS, "r");
   FILE *tmp = fopen("./data/temp.txt", "w");
 
   if (pt == NULL || tmp == NULL) {
-    printf("Error opening files.\n");
+    showStatus("Error opening files.", 1);
+    if (pt)
+      fclose(pt);
+    if (tmp)
+      fclose(tmp);
+    waitForKeyPress();
     return;
   }
 
@@ -363,10 +362,9 @@ void transferOwner(struct User u) {
     if (r.id == accountId) {
       if (r.userId == u.id) {
         found = 1;
-        printf("\nEnter new User ID: ");
-        scanf("%d", &newOwnerId);
+        newOwnerId = getInt("Enter new User ID:");
 
-        // Check if new owner exists
+        // Check new owner
         FILE *uf = fopen("./data/users.txt", "r");
         struct User checker;
         int userFound = 0;
@@ -377,7 +375,7 @@ void transferOwner(struct User u) {
               userFound = 1;
               strcpy(userName, checker.name);
               r.userId = newOwnerId;
-              printf("\n✔ Ownership transferred to %s (ID: %d)\n", checker.name,
+              printf("\nTransferred to %s (ID: %d)\n", checker.name,
                      newOwnerId);
               break;
             }
@@ -386,11 +384,12 @@ void transferOwner(struct User u) {
         }
 
         if (!userFound) {
-          printf("\n✖ Error: Target User ID not found!\n");
-          // Don't update
+          showStatus("Target User ID not found!", 1);
+        } else {
+          showStatus("Ownership transferred successfully!", 0);
         }
       } else {
-        printf("\n✖ Access Denied! You do not own this account.\n");
+        showStatus("Access Denied! You do not own this account.", 1);
       }
     }
     fprintf(tmp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n", r.id, r.userId,
@@ -404,6 +403,7 @@ void transferOwner(struct User u) {
   rename("./data/temp.txt", RECORDS);
 
   if (!found)
-    printf("\n✖ Account not found or not owned by you.\n");
-  success(u);
+    showStatus("Account not found or not owned by you.", 1);
+
+  waitForKeyPress();
 }
