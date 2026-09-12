@@ -44,7 +44,7 @@ void initMenu(struct User *u) {
   const char *options[] = {"Login", "Register", "Exit"};
 
   while (1) {
-    int choice = showMenu("Welcome to ATM System", options, 3);
+    int choice = showMenu("Welcome to Apex Vault", options, 3);
 
     switch (choice) {
     case 1:

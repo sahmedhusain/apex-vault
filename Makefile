@@ -1,7 +1,7 @@
 objects = src/main.o src/system.o src/auth.o src/ui.o
 
-atm : $(objects)
-	cc -o atm $(objects)
+apex-vault : $(objects)
+	cc -o apex-vault $(objects)
 
 main.o : src/header.h
 kbd.o : src/header.h

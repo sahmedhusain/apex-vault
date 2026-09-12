@@ -78,7 +78,7 @@ void showHeader(const char *title) {
   // columns, breaking dynamic centering for UTF-8 box chars
   printf("        "
          "╔══════════════════════════════════════════════════════════════╗\n"
-         "        ║                    ATM MANAGEMENT SYSTEM                   "
+         "        ║                 APEX VAULT BANKING SYSTEM                  "
          "  ║\n"
          "        "
          "╚══════════════════════════════════════════════════════════════╝\n");

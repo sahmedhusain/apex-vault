@@ -1,117 +1,77 @@
-# ATM Management System 🏦
+# 🏦 ApexVault
 
-[![C](https://img.shields.io/badge/Language-C-blue.svg)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![C](https://img.shields.io/badge/Language-C11-blue.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![Platform](https://img.shields.io/badge/Platform-Terminal%20%7C%20POSIX-orange)](#-getting-started)
 
-A robust, terminal-based **ATM Management System** built in C. It features a modern, centered **Text User Interface (TUI)** with keyboard navigation, secure authentication, and comprehensive account management capabilities.
+**ApexVault** is a terminal-based financial management engine and banking system implemented in C. Featuring a centered Text User Interface (TUI) with interactive arrow-key navigation, secure password masking, dynamic interest reward calculations, and multi-account ledger persistence.
 
 ---
 
 ## ✨ Features
 
-- **Modern TUI Experience** 🖥️
-  - **Centered Layout**: All menus, prompts, and status messages are perfectly centered.
-  - **Keyboard Navigation**: Use **UP/DOWN** arrows to navigate menus and **ENTER** to select.
-  - **Responsive Input**: Supports **ESC** to cancel any operation instantly.
-  - **Boxed Interface**: aesthetically pleasing double-line borders.
-
-- **Secure Authentication** �
-  - **Login System**: Secure access with password masking (`*`).
-  - **Registration**: New users can securely sign up.
-  - **Data Persistence**: All user and account data is saved to local files (`users.txt`, `records.txt`).
-
-- **Account Operations** �
-  - **Create Account**: Open new accounts (Savings, Fixed, Current).
-  - **Update Account**: Modify phone numbers or country details.
-  - **Check Accounts**: View all owned accounts in a list.
-  - **Account Details**: Lookup specific account details by **Account Number**.
-  - **Remove Account**: Delete closed accounts.
-  - **Transfer Ownership**: Transfer accounts to other users securely.
-
-- **Transactions** �
-  - **Deposit**: Add funds to your account (Currency: **BHD**).
-  - **Withdraw**: Withdraw funds with balance validation.
-  - **Validation**: Strict input checks for amounts, dates, and IDs.
+- **Centered TUI Layout**: Double-line boxed interface rendered with ASCII border alignment.
+- **Keyboard Navigation**: Interactive selection with `UP`/`DOWN` arrow keys, `ENTER` selection, and instant `ESC` cancel.
+- **Authentication Security**: User signup/login authentication with password masking (`*`) and persistent credentials storage.
+- **Multi-Account Support**: Manage Savings, Fixed, and Current account types with individual deposit dates, balances, and account ownership transfer capabilities.
+- **Financial Transactions**: Deposit/withdraw routines with real-time balance validation and interest reward calculation.
+- **Input Validation**: Strict error handling for invalid account IDs, dates, and non-numeric inputs.
 
 ---
 
-## 📸 Terminal Examples
+## 📋 Table of Contents
 
-The system features a polished, centered interface. Here is exactly what it looks like in your terminal:
+- [Features](#-features)
+- [System Architecture](#-system-architecture)
+- [State Machine & Transaction Flow](#-state-machine--transaction-flow)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [License](#-license)
 
-### 1. Main Menu
+---
 
-The heart of the navigation. options are highlighted when selected.
+## 🏗️ System Architecture
 
-```text
-        ╔══════════════════════════════════════════════════════════════╗
-        ║                    ATM MANAGEMENT SYSTEM                     ║
-        ╚══════════════════════════════════════════════════════════════╝
-
-                               === Main Menu ===
-
-                              Create a new account
-                           Update account information
-                                 Check accounts
-                        > Check list of owned account <
-                                Make Transaction
-                            Remove existing account
-                               Transfer ownership
-                                      Exit
-
-                Use UP/DOWN arrows to navigate, ENTER to select.
+```mermaid
+graph TD
+    A[Terminal Launch / main] --> B[UI Layer: TUI Menu Renderer]
+    B --> C{Authenticated Session?}
+    
+    C -- No --> D[Auth System: Login / Register]
+    D -->|Validate Credentials| E[(users.txt Database)]
+    
+    C -- Yes --> F[Main Dashboard Dispatcher]
+    F --> G1[Account Management: Create / Update / Remove / Transfer]
+    F --> G2[Financial Engine: Deposit / Withdraw / Interest Calc]
+    F --> G3[Query Engine: Search Account / List Owned Accounts]
+    
+    G1 & G2 & G3 --> H[(records.txt Ledger Database)]
 ```
 
-### 2. Login Screen
+---
 
-Secure entry point.
+## 📐 State Machine & Transaction Flow
 
-```text
-        ╔══════════════════════════════════════════════════════════════╗
-        ║                    ATM MANAGEMENT SYSTEM                     ║
-        ╚══════════════════════════════════════════════════════════════╝
+```mermaid
+sequenceDiagram
+    participant User
+    participant TUI as TUI Interface (ui.c)
+    participant Auth as Authentication Service (auth.c)
+    participant Engine as Transaction Engine (system.c)
+    participant DB as File Storage (records.txt)
 
-                           === Welcome to ATM System ===
-
-                                    > Login <
-                                     Register
-                                       Exit
-
-                Use UP/DOWN arrows to navigate, ENTER to select.
-```
-
-### 3. Account Details
-
-Clear presentation of account information.
-
-```text
-                               === Account Details ===
-
-        Account number: 101
-        Deposit Date:   1/15/2024
-        Country:        Bahrain
-        Phone number:   33001122
-        Amount:         BHD 1500.50
-        Type:           saving
-
-        Interest Rate: 7%
-        Monthly Interest Reward: BHD 8.75
-
-        Press any key to continue...
-```
-
-### 4. Input Validation
-
-Robust handling of user input with error messages.
-
-```text
-                               === Make Transaction ===
-
-                       Enter the account number: 999
-
-                       [!] Account not found or access denied.
-
-        Press any key to continue...
+    User->>TUI: Arrow Keys + Enter (Login)
+    TUI->>Auth: loginMenu(username, password)
+    Auth-->>TUI: Session Token / User ID
+    
+    User->>TUI: Select "Make Transaction -> Deposit"
+    TUI->>Engine: depositBalance(account_no, amount)
+    Engine->>DB: Read & Lock Account Record
+    DB-->>Engine: Current Account Balance
+    Engine->>Engine: Compute Updated Balance & Monthly Interest
+    Engine->>DB: Write Updated Record
+    Engine-->>TUI: Display Success & Receipt Summary
+    TUI-->>User: Render Centered Confirmation Screen
 ```
 
 ---
@@ -120,55 +80,49 @@ Robust handling of user input with error messages.
 
 ### Prerequisites
 
-- GCC Compiler (or any standard C compiler)
-- Make (optional, for easy building)
+- **C Compiler**: GCC or Clang
+- **Make**: Build utility
 
-### Installation
+### Build & Run
 
-1.  **Clone the repository**:
+1. **Clone Repository**:
+   ```bash
+   git clone https://github.com/sahmedhusain/apex-vault.git
+   cd apex-vault
+   ```
 
-    ```bash
-    git clone https://github.com/yourusername/atm-management-system.git
-    cd atm-management-system
-    ```
+2. **Compile Application**:
+   ```bash
+   make
+   ```
 
-2.  **Compile the project**:
-
-    ```bash
-    make
-    ```
-
-    _Or manually:_ `gcc -o atm src/main.c src/system.c src/auth.c src/ui.c`
-
-3.  **Run the application**:
-    ```bash
-    ./atm
-    ```
+3. **Launch ApexVault**:
+   ```bash
+   ./apex-vault
+   ```
 
 ---
 
-## �️ Project Structure
+## 📂 Project Structure
 
 ```
-atm-management-system/
-├── src/
-│   ├── main.c       # Entry point & menu logic
-│   ├── system.c     # Account operations & transaction logic
-│   ├── auth.c       # Authentication (Login/Register)
-│   ├── ui.c         # TUI handling, Input Validation details
-│   ├── header.h     # Data structures & Global declarations
-│   └── ui.h         # UI function declarations
-├── data/
-│   ├── users.txt    # User credentials database
-│   └── records.txt  # Account records database
-├── Makefile         # Build configuration
-└── README.md        # Documentation
+apex-vault/
+├── Makefile         # Build rules and dependencies
+├── LICENSE.md       # MIT License
+├── README.md        # Documentation
+├── data/            # Local database storage
+│   ├── users.txt    # User credentials store
+│   └── records.txt  # Bank account ledger records
+└── src/
+    ├── main.c       # Application bootstrapper and main loop
+    ├── auth.c       # Authentication & user registration routines
+    ├── system.c     # Account CRUD operations and financial calculations
+    ├── ui.c         # Centered TUI box renderer & keyboard reader
+    └── header.h     # Core structs and function signatures
 ```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes.
 
 ---
 
-**Developed with ❤️ by Sayed Ahmed**
+## 📄 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE.md) for details.
