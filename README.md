@@ -8,6 +8,64 @@
 
 ---
 
+## 📸 Terminal Interface Preview
+
+ApexVault features a polished, centered Text User Interface (TUI) rendered directly in the terminal:
+
+### 1. Main Navigation Menu
+```text
+        ╔══════════════════════════════════════════════════════════════╗
+        ║                 APEX VAULT BANKING SYSTEM                    ║
+        ╚══════════════════════════════════════════════════════════════╝
+
+                               === Main Menu ===
+
+                              Create a new account
+                           Update account information
+                                 Check accounts
+                        > Check list of owned account <
+                                Make Transaction
+                            Remove existing account
+                               Transfer ownership
+                                      Exit
+
+                Use UP/DOWN arrows to navigate, ENTER to select.
+```
+
+### 2. Authentication Entry Screen
+```text
+        ╔══════════════════════════════════════════════════════════════╗
+        ║                 APEX VAULT BANKING SYSTEM                    ║
+        ╚══════════════════════════════════════════════════════════════╝
+
+                            === Welcome to Apex Vault ===
+
+                                     > Login <
+                                      Register
+                                        Exit
+
+                Use UP/DOWN arrows to navigate, ENTER to select.
+```
+
+### 3. Account Details Display
+```text
+                               === Account Details ===
+
+        Account number: 101
+        Deposit Date:   1/15/2024
+        Country:        Bahrain
+        Phone number:   33001122
+        Amount:         BHD 1500.50
+        Type:           saving
+
+        Interest Rate: 7%
+        Monthly Interest Reward: BHD 8.75
+
+        Press any key to continue...
+```
+
+---
+
 ## ✨ Features
 
 - **Centered TUI Layout**: Double-line boxed interface rendered with ASCII border alignment.
@@ -21,6 +79,7 @@
 
 ## 📋 Table of Contents
 
+- [Terminal Interface Preview](#-terminal-interface-preview)
 - [Features](#-features)
 - [System Architecture](#-system-architecture)
 - [State Machine & Transaction Flow](#-state-machine--transaction-flow)
@@ -34,18 +93,20 @@
 
 ```mermaid
 graph TD
-    A[Terminal Launch / main] --> B[UI Layer: TUI Menu Renderer]
-    B --> C{Authenticated Session?}
+    A["Terminal Launch / main"] --> B["UI Layer: TUI Menu Renderer"]
+    B --> C{"Authenticated Session?"}
     
-    C -- No --> D[Auth System: Login / Register]
-    D -->|Validate Credentials| E[(users.txt Database)]
+    C -- No --> D["Auth System: Login / Register"]
+    D --> E[("users.txt Database")]
     
-    C -- Yes --> F[Main Dashboard Dispatcher]
-    F --> G1[Account Management: Create / Update / Remove / Transfer]
-    F --> G2[Financial Engine: Deposit / Withdraw / Interest Calc]
-    F --> G3[Query Engine: Search Account / List Owned Accounts]
+    C -- Yes --> F["Main Dashboard Dispatcher"]
+    F --> G1["Account Management: Create / Update / Remove / Transfer"]
+    F --> G2["Financial Engine: Deposit / Withdraw / Interest Calc"]
+    F --> G3["Query Engine: Search Account / List Owned Accounts"]
     
-    G1 & G2 & G3 --> H[(records.txt Ledger Database)]
+    G1 --> H[("records.txt Ledger Database")]
+    G2 --> H
+    G3 --> H
 ```
 
 ---
@@ -54,9 +115,9 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant User as User
     participant TUI as TUI Interface (ui.c)
-    participant Auth as Authentication Service (auth.c)
+    participant Auth as Auth Service (auth.c)
     participant Engine as Transaction Engine (system.c)
     participant DB as File Storage (records.txt)
 
